@@ -6,8 +6,10 @@ exports.recordStudyTime = async (req, res) => {
         const { duration } = req.body;
         const userId = req.userId;
         
-        // 使用 UTC 时间以确保日期一致性
-        const date = new Date().toISOString().split('T')[0];
+        // 使用 UTC+8 时区（中国标准时间）
+        const now = new Date();
+        const chinaDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+        const date = chinaDate.toISOString().split('T')[0];
         console.log('记录学习时长:', { userId, date, duration });
 
         // 每次专注都创建新记录
@@ -34,17 +36,35 @@ exports.getWeeklyRecord = async (req, res) => {
         const userId = req.userId;
         console.log('获取周记录，用户ID:', userId);
         
-        // 获取每天的总时长和专注次数
+        // 使用 UTC+8 时区的当前日期，并生成过去7天的日期序列
         const result = await db.query(
-            `SELECT 
-                date,
-                SUM(duration) as duration,
-                COUNT(*) as focus_count
-             FROM study_records 
-             WHERE user_id = $1 
-             AND date >= CURRENT_DATE - INTERVAL '6 days'
-             GROUP BY date
-             ORDER BY date DESC`,
+            `WITH RECURSIVE dates AS (
+                SELECT 
+                    (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date as date
+                UNION ALL
+                SELECT 
+                    date - 1
+                FROM dates
+                WHERE date > (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days'
+            ),
+            daily_records AS (
+                SELECT 
+                    date,
+                    SUM(duration) as duration,
+                    COUNT(*) as focus_count
+                FROM study_records 
+                WHERE user_id = $1 
+                AND date >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days'
+                AND date <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date
+                GROUP BY date
+            )
+            SELECT 
+                dates.date,
+                COALESCE(daily_records.duration, 0) as duration,
+                COALESCE(daily_records.focus_count, 0) as focus_count
+            FROM dates
+            LEFT JOIN daily_records ON dates.date = daily_records.date
+            ORDER BY dates.date DESC`,
             [userId]
         );
 
@@ -54,4 +74,4 @@ exports.getWeeklyRecord = async (req, res) => {
         console.error('获取周记录错误:', err);
         res.status(500).json({ message: '服务器错误' });
     }
-}; 
+};
