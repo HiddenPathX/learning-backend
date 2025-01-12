@@ -20,18 +20,18 @@ exports.recordStudyTime = async (req, res) => {
 
         let result;
         if (existingRecord.rows.length > 0) {
-            // 更新现有记录，确保数值类型正确
+            // 更新现有记录，只更新duration字段
             console.log('更新现有记录');
             result = await db.query(
-                'UPDATE study_records SET duration = CAST(duration AS INTEGER) + $1, focus_count = CAST(focus_count AS INTEGER) + 1 WHERE user_id = $2 AND date = $3 RETURNING *',
+                'UPDATE study_records SET duration = CAST(duration AS INTEGER) + $1 WHERE user_id = $2 AND date = $3 RETURNING *',
                 [parseInt(duration), userId, date]
             );
         } else {
-            // 创建新记录，确保数值类型正确
+            // 创建新记录，只包含必要字段
             console.log('创建新的专注记录');
             result = await db.query(
-                'INSERT INTO study_records (user_id, date, duration, focus_count) VALUES ($1, $2, $3, 1) RETURNING *',
-                [userId, date, parseInt(duration), 1]
+                'INSERT INTO study_records (user_id, date, duration) VALUES ($1, $2, $3) RETURNING *',
+                [userId, date, parseInt(duration)]
             );
         }
 
@@ -67,7 +67,7 @@ exports.getWeeklyRecord = async (req, res) => {
                 SELECT 
                     date,
                     CAST(SUM(CAST(duration AS INTEGER)) AS INTEGER) as duration,
-                    CAST(COUNT(*) AS INTEGER) as focus_count
+                    COUNT(*) as focus_count
                 FROM study_records 
                 WHERE user_id = $1 
                 AND date >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days'
