@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 // 路由导入
 const authRoutes = require('./routes/authRoutes');
 const studyRoutes = require('./routes/studyRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 // 环境变量配置
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(express.json());
 // 路由
 app.use('/api/auth', authRoutes);
 app.use('/api/study', studyRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 测试路由
 app.get('/', (req, res) => {
