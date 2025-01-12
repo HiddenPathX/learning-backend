@@ -1,21 +1,23 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
-const auth = async (req, res, next) => {
+const auth = (req, res, next) => {
     try {
+        // 从请求头获取token
         const token = req.header('Authorization').replace('Bearer ', '');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.userId);
-
-        if (!user) {
-            throw new Error();
+        
+        if (!token) {
+            return res.status(401).json({ message: '未提供认证令牌' });
         }
 
-        req.token = token;
-        req.user = user;
+        // 验证token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // 将用户ID添加到请求对象
+        req.userId = decoded.userId;
+        
         next();
     } catch (error) {
-        res.status(401).json({ message: '请先登录' });
+        res.status(401).json({ message: '认证失败' });
     }
 };
 
