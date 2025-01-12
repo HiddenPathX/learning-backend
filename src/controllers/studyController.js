@@ -10,28 +10,12 @@ exports.recordStudyTime = async (req, res) => {
         const date = new Date().toISOString().split('T')[0];
         console.log('记录学习时长:', { userId, date, duration });
 
-        // 检查今天是否已有记录
-        const existingRecord = await db.query(
-            'SELECT * FROM study_records WHERE user_id = $1 AND date = $2',
-            [userId, date]
+        // 每次专注都创建新记录
+        console.log('创建新的专注记录');
+        const result = await db.query(
+            'INSERT INTO study_records (user_id, date, duration) VALUES ($1, $2, $3) RETURNING *',
+            [userId, date, duration]
         );
-
-        let result;
-        if (existingRecord.rows.length > 0) {
-            // 更新现有记录
-            console.log('更新现有记录');
-            result = await db.query(
-                'UPDATE study_records SET duration = duration + $1 WHERE user_id = $2 AND date = $3 RETURNING *',
-                [duration, userId, date]
-            );
-        } else {
-            // 创建新记录
-            console.log('创建新记录');
-            result = await db.query(
-                'INSERT INTO study_records (user_id, date, duration) VALUES ($1, $2, $3) RETURNING *',
-                [userId, date, duration]
-            );
-        }
 
         console.log('记录结果:', result.rows[0]);
         res.json({ 
@@ -50,11 +34,16 @@ exports.getWeeklyRecord = async (req, res) => {
         const userId = req.userId;
         console.log('获取周记录，用户ID:', userId);
         
+        // 获取每天的总时长和专注次数
         const result = await db.query(
-            `SELECT date, duration 
+            `SELECT 
+                date,
+                SUM(duration) as duration,
+                COUNT(*) as focus_count
              FROM study_records 
              WHERE user_id = $1 
              AND date >= CURRENT_DATE - INTERVAL '6 days'
+             GROUP BY date
              ORDER BY date DESC`,
             [userId]
         );
