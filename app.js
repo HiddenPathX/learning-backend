@@ -35,7 +35,10 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: '服务器内部错误' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// 使用 Render 提供的端口或默认端口
+const port = process.env.PORT || 10000;
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server is running on port ${port}`);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('CORS Origin:', process.env.CORS_ORIGIN);
 }); 
