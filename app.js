@@ -35,10 +35,26 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: '服务器内部错误' });
 });
 
-// 使用 Render 提供的端口或默认端口
-const port = process.env.PORT || 10000;
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Server is running on port ${port}`);
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('CORS Origin:', process.env.CORS_ORIGIN);
+// 获取端口号
+const port = process.env.PORT || 3000;
+
+// 启动服务器
+const server = app.listen(port, () => {
+    console.log('=== 服务器启动信息 ===');
+    console.log(`服务器运行在端口: ${port}`);
+    console.log(`环境: ${process.env.NODE_ENV}`);
+    console.log(`CORS 配置: ${process.env.CORS_ORIGIN}`);
+    console.log('=====================');
+});
+
+// 优雅关闭
+process.on('SIGTERM', () => {
+    console.log('收到 SIGTERM 信号，准备关闭服务器...');
+    server.close(() => {
+        console.log('服务器已关闭');
+        sequelize.close().then(() => {
+            console.log('数据库连接已关闭');
+            process.exit(0);
+        });
+    });
 }); 
