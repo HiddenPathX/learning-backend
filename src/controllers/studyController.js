@@ -61,18 +61,18 @@ exports.getWeeklyRecord = async (req, res) => {
                 SELECT 
                     date - 1
                 FROM dates
-                WHERE date > (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days'
+                WHERE date > ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days')
             ),
             daily_records AS (
                 SELECT 
-                    date,
+                    date::date,
                     CAST(SUM(CAST(duration AS INTEGER)) AS INTEGER) as duration,
                     COUNT(*) as focus_count
                 FROM study_records 
                 WHERE user_id = $1 
-                AND date >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days'
+                AND date >= ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days')
                 AND date <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date
-                GROUP BY date
+                GROUP BY date::date
             )
             SELECT 
                 dates.date,
