@@ -16,14 +16,13 @@ exports.recordStudyTime = async (req, res) => {
 
         let result;
         if (existingRecord.rows.length > 0) {
-            // 更新现有记录
+            // 修改更新逻辑，使用具体的记录ID
             result = await db.query(
                 `UPDATE study_records 
                  SET duration = CAST(duration AS INTEGER) + $1 
-                 WHERE user_id = $2 
-                 AND date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date
+                 WHERE id = $2 
                  RETURNING *`,
-                [parseInt(duration), userId]
+                [parseInt(duration), existingRecord.rows[0].id]
             );
         } else {
             // 创建新记录
@@ -34,6 +33,12 @@ exports.recordStudyTime = async (req, res) => {
                 [userId, parseInt(duration)]
             );
         }
+
+        // 添加调试日志
+        console.log('Record operation result:', {
+            existingRecord: existingRecord.rows[0],
+            newRecord: result.rows[0]
+        });
 
         res.json({ 
             message: '学习时长记录成功',
