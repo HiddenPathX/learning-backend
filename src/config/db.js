@@ -8,8 +8,10 @@ const pool = new Pool({
     ssl: {
         rejectUnauthorized: false
     },
-    timezone: 'UTC'
 });
+
+// 初始化数据库时区设置
+pool.query('SET timezone = "UTC"');
 
 module.exports = {
     query: (text, params) => pool.query(text, params)
