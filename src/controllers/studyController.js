@@ -6,16 +6,11 @@ exports.recordStudyTime = async (req, res) => {
         const { duration } = req.body;
         const userId = req.userId;
         
-        // 使用 UTC+8 时区（中国标准时间）
-        const now = new Date();
-        const chinaDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-        const date = chinaDate.toISOString().split('T')[0];
-        
         // 检查今天是否已有记录
         const existingRecord = await db.query(
             `SELECT * FROM study_records 
              WHERE user_id = $1 
-             AND date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date`,
+             AND date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date`,
             [userId]
         );
 
@@ -26,7 +21,7 @@ exports.recordStudyTime = async (req, res) => {
                 `UPDATE study_records 
                  SET duration = CAST(duration AS INTEGER) + $1 
                  WHERE user_id = $2 
-                 AND date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date
+                 AND date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date
                  RETURNING *`,
                 [parseInt(duration), userId]
             );
@@ -34,7 +29,7 @@ exports.recordStudyTime = async (req, res) => {
             // 创建新记录
             result = await db.query(
                 `INSERT INTO study_records (user_id, date, duration) 
-                 VALUES ($1, (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date, $2) 
+                 VALUES ($1, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai', $2) 
                  RETURNING *`,
                 [userId, parseInt(duration)]
             );
@@ -55,25 +50,29 @@ exports.getWeeklyRecord = async (req, res) => {
     try {
         const userId = req.userId;
         
+        // 添加调试日志
+        console.log('Current server time:', new Date().toISOString());
+        console.log('Current China time:', new Date(Date.now() + (8 * 60 * 60 * 1000)).toISOString());
+        
         const result = await db.query(
             `WITH RECURSIVE dates AS (
                 SELECT 
-                    (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date as date
+                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date as date
                 UNION ALL
                 SELECT 
                     date - 1
                 FROM dates
-                WHERE date > ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days')
+                WHERE date > ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '6 days')
             ),
             daily_records AS (
                 SELECT 
-                    date::date,
+                    date::date as date,  -- 简化日期处理
                     CAST(SUM(CAST(duration AS INTEGER)) AS INTEGER) as duration,
                     COUNT(*) as focus_count
                 FROM study_records 
                 WHERE user_id = $1 
-                AND date::date >= ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days')
-                AND date::date <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date
+                AND date::date >= ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '6 days')
+                AND date::date <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date
                 GROUP BY date::date
             )
             SELECT 
@@ -81,11 +80,14 @@ exports.getWeeklyRecord = async (req, res) => {
                 COALESCE(daily_records.duration, 0) as duration,
                 COALESCE(daily_records.focus_count, 0) as focus_count
             FROM dates
-            LEFT JOIN daily_records ON dates.date = daily_records.date::date
+            LEFT JOIN daily_records ON dates.date = daily_records.date
             ORDER BY dates.date DESC`,
             [userId]
         );
 
+        // 添加调试日志
+        console.log('Query result:', result.rows);
+        
         res.json(result.rows);
     } catch (err) {
         console.error('获取周记录错误:', err);
