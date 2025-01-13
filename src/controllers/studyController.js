@@ -72,9 +72,9 @@ exports.getWeeklyRecord = async (req, res) => {
             ),
             daily_records AS (
                 SELECT 
-                    date::date as date,  -- 简化日期处理
+                    date::date as date,
                     CAST(SUM(CAST(duration AS INTEGER)) AS INTEGER) as duration,
-                    COUNT(*) as focus_count
+                    MAX(CAST(focus_count AS INTEGER)) as focus_count
                 FROM study_records 
                 WHERE user_id = $1 
                 AND date::date >= ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date - INTERVAL '6 days')
