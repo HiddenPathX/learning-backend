@@ -65,17 +65,17 @@ exports.getWeeklyRecord = async (req, res) => {
             ),
             daily_records AS (
                 SELECT 
-                    date::date,
+                    date,
                     CAST(SUM(CAST(duration AS INTEGER)) AS INTEGER) as duration,
                     COUNT(*) as focus_count
                 FROM study_records 
                 WHERE user_id = $1 
                 AND date >= ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date - INTERVAL '6 days')
                 AND date <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC+8')::date
-                GROUP BY date::date
+                GROUP BY date
             )
             SELECT 
-                dates.date,
+                TO_CHAR(dates.date, 'YYYY-MM-DD') as date,
                 COALESCE(daily_records.duration, 0) as duration,
                 COALESCE(daily_records.focus_count, 0) as focus_count
             FROM dates
