@@ -16,19 +16,20 @@ exports.recordStudyTime = async (req, res) => {
 
         let result;
         if (existingRecord.rows.length > 0) {
-            // 修改更新逻辑，使用具体的记录ID
+            // 修改更新逻辑，同时更新 duration 和 focus_count
             result = await db.query(
                 `UPDATE study_records 
-                 SET duration = CAST(duration AS INTEGER) + $1 
+                 SET duration = CAST(duration AS INTEGER) + $1,
+                     focus_count = CAST(focus_count AS INTEGER) + 1
                  WHERE id = $2 
                  RETURNING *`,
                 [parseInt(duration), existingRecord.rows[0].id]
             );
         } else {
-            // 创建新记录
+            // 创建新记录，包含 focus_count
             result = await db.query(
-                `INSERT INTO study_records (user_id, date, duration) 
-                 VALUES ($1, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai', $2) 
+                `INSERT INTO study_records (user_id, date, duration, focus_count) 
+                 VALUES ($1, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai', $2, 1) 
                  RETURNING *`,
                 [userId, parseInt(duration)]
             );
