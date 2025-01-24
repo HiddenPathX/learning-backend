@@ -5,10 +5,10 @@ dotenv.config();
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    // },
-    ssl: false
+     ssl: {
+         rejectUnauthorized: false
+     },
+
 });
 
 // 初始化数据库时区设置
