@@ -41,8 +41,8 @@ exports.sendToAI = async (req, res) => {
                 'Authorization': `Bearer ${process.env.AI_API_KEY}`
             },
             body: JSON.stringify({
-                model: "deepseek-chat",
-                messages: messages,
+                model: "Pro/deepseek-ai/DeepSeek-R1",
+                messages: messages.filter(msg => !msg.isReasoning), // 过滤掉思维链内容
                 temperature: 0.7,
                 max_tokens: 8000,
                 stream: true
@@ -55,16 +55,67 @@ exports.sendToAI = async (req, res) => {
         }
 
         // 直接转发AI的响应流
-        await response.body.pipeTo(
-            new WritableStream({
-                write(chunk) {
-                    res.write(chunk);
-                },
-                close() {
-                    res.end();
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        let isReasoning = true; // 标记当前是否在输出思维链
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.choices?.[0]?.delta?.reasoning_content) {
+                            // 发送思维链内容
+                            res.write(`data: ${JSON.stringify({
+                                choices: [{
+                                    delta: {
+                                        content: data.choices[0].delta.reasoning_content,
+                                        isReasoning: true
+                                    }
+                                }]
+                            })}\n\n`);
+                        } else if (data.choices?.[0]?.delta?.content) {
+                            if (isReasoning) {
+                                // 发送分隔标记
+                                res.write(`data: ${JSON.stringify({
+                                    choices: [{
+                                        delta: {
+                                            content: "\n---\n",
+                                            isTransition: true
+                                        }
+                                    }]
+                                })}\n\n`);
+                                isReasoning = false;
+                            }
+                            // 发送正文内容
+                            res.write(`data: ${JSON.stringify({
+                                choices: [{
+                                    delta: {
+                                        content: data.choices[0].delta.content,
+                                        isReasoning: false
+                                    }
+                                }]
+                            })}\n\n`);
+                        }
+                    } catch (error) {
+                        console.error('解析消息时出错:', error);
+                    }
                 }
-            })
-        );
+            }
+        }
+        res.end();
 
     } catch (error) {
         console.error('AI请求错误:', error);
