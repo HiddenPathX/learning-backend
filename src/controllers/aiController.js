@@ -43,7 +43,7 @@ exports.sendToAI = async (req, res) => {
             body: JSON.stringify({
                 model: "Pro/deepseek-ai/DeepSeek-R1",
                 messages: messages.filter(msg => !msg.isReasoning), // 过滤掉思维链内容
-                temperature: 0.7,
+                temperature: 0.6,
                 max_tokens: 8000,
                 stream: true
             })
