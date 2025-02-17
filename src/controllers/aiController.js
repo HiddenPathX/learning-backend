@@ -41,7 +41,7 @@ exports.sendToAI = async (req, res) => {
                 'Authorization': `Bearer ${process.env.AI_API_KEY}`
             },
             body: JSON.stringify({
-                model: "bot-20250217204023-xpnw4",
+                model: "Pro/deepseek-ai/DeepSeek-R1",
                 messages: messages.filter(msg => !msg.isReasoning), // 过滤掉思维链内容
                 temperature: 0.6,
                 max_tokens: 8000,
