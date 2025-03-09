@@ -3,7 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 
 // 路由导入
-const authRoutes = require('./routes/authRoutes');
+// const authRoutes = require('./routes/authRoutes');
 const studyRoutes = require('./routes/studyRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // 路由
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes);
 app.use('/api/study', studyRoutes);
 app.use('/api/ai', aiRoutes);
 
