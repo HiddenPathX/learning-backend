@@ -23,7 +23,15 @@ exports.sendToAI = async (req, res) => {
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         
         // 构建完整的API URL
-        const apiUrl = `${process.env.API_HOST}${process.env.API_PATH}`;
+        const apiHost = process.env.API_HOST || 'https://api.deepseek.com';
+        const apiPath = process.env.API_PATH || '/v1/chat/completions';
+        const apiUrl = `${apiHost}${apiPath}`;
+        
+        // 检查URL是否有效
+        if (!apiHost || !apiPath) {
+            throw new Error('API_HOST或API_PATH环境变量未设置，无法构建有效的API URL');
+        }
+        
         console.log('发送请求到:', apiUrl);
         console.log('请求体:', JSON.stringify({
             model: "Pro/deepseek-ai/DeepSeek-R1",
