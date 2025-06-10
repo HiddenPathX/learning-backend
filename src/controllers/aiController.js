@@ -34,8 +34,8 @@ exports.sendToAI = async (req, res) => {
         
         console.log('发送请求到:', apiUrl);
         console.log('请求体:', JSON.stringify({
-            model: "Pro/deepseek-ai/DeepSeek-R1",
-            messages: messages.filter(msg => !msg.isReasoning),
+            model: "Pro/deepseek-ai/DeepSeek-V3",
+            messages: messages,
             temperature: 0.6,
             max_tokens: 8000,
             stream: true
@@ -57,8 +57,8 @@ exports.sendToAI = async (req, res) => {
                     'Accept': 'text/event-stream'
                 },
                 body: JSON.stringify({
-                    model: "Pro/deepseek-ai/DeepSeek-R1", // 使用siliconflow API的模型名称
-                    messages: messages.filter(msg => !msg.isReasoning),
+                    model: "Pro/deepseek-ai/DeepSeek-V3",
+                    messages: messages,
                     temperature: 0.6,
                     max_tokens: 8000,
                     stream: true
@@ -107,12 +107,11 @@ exports.sendToAI = async (req, res) => {
                             if (data.choices?.[0]?.delta?.content) {
                                 const content = data.choices[0].delta.content;
                                 
-                                // 直接发送所有内容作为正文
+                                // 直接发送内容
                                 res.write(`data: ${JSON.stringify({
                                     choices: [{
                                         delta: {
-                                            content: content,
-                                            isReasoning: false
+                                            content: content
                                         }
                                     }]
                                 })}\n\n`);
